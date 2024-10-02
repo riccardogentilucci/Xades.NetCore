@@ -21,6 +21,7 @@
 // 
 // --------------------------------------------------------------------------------------------------------------------
 
+using FirmaXadesNet.Crypto;
 using FirmaXadesNet.Signature;
 using FirmaXadesNet.Signature.Parameters;
 using FirmaXadesNet.Utils;
@@ -40,6 +41,10 @@ namespace FirmaXadesNet
 
     public class XadesService
     {
+        static XadesService() 
+        {
+            CryptoConfig.AddAlgorithm(typeof(ECDsa256SignatureDescription), SignatureMethod.ECDSAwithSHA256.URI);
+        }
 
         #region Private variables
 
@@ -797,7 +802,10 @@ namespace FirmaXadesNet
             KeyInfo keyInfo = new KeyInfo();
             keyInfo.Id = "KeyInfoId-" + sigDocument.XadesSignature.Signature.Id;
             keyInfo.AddClause(new KeyInfoX509Data((X509Certificate)parameters.Signer.Certificate));
-            keyInfo.AddClause(new RSAKeyValue((RSA)parameters.Signer.SigningKey));
+            // L'elemento KeyValue del nodo KeyInfo non è obbligatorio per la compatibilità con XAdES
+            // ed è comunque ridondante rispetto al nodo Certificate.
+            // Per aggiungerlo comunque nel caso di chiavi ECDSA serve serializzarlo in un elemento ECKeyValue
+            // keyInfo.AddClause(new RSAKeyValue((RSA)parameters.Signer.SigningKey));
 
             sigDocument.XadesSignature.KeyInfo = keyInfo;
 

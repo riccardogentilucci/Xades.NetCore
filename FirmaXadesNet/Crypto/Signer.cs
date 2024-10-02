@@ -95,23 +95,21 @@ namespace FirmaXadesNet.Crypto
 
         #region Private methods
 
-        private void SetSigningKey(X509Certificate2 certificate)
+        private void SetSigningKey(X509Certificate2 certificate) 
         {
-            var k = certificate.PrivateKey;
-            if (k is RSACng)
+            // [rg] Supporto per ECDSA
+            var k = certificate.GetRSAPrivateKey() as AsymmetricAlgorithm ?? certificate.GetECDsaPrivateKey() as AsymmetricAlgorithm;
+            if (k is RSACng || k is ECDsaCng) 
             {
-                _signingKey =k;
+                _signingKey = k;
                 _disposeCryptoProvider = false;
             }
-            else
+            else if (k is RSACryptoServiceProvider key) 
             {
-
-                var key = (RSACryptoServiceProvider)k;
-
                 if (key.CspKeyContainerInfo.ProviderName == CryptoConst.MS_STRONG_PROV ||
                     key.CspKeyContainerInfo.ProviderName == CryptoConst.MS_ENHANCED_PROV ||
                     key.CspKeyContainerInfo.ProviderName == CryptoConst.MS_DEF_PROV ||
-                    key.CspKeyContainerInfo.ProviderName == CryptoConst.MS_DEF_RSA_SCHANNEL_PROV)
+                    key.CspKeyContainerInfo.ProviderName == CryptoConst.MS_DEF_RSA_SCHANNEL_PROV) 
                 {
                     Type CspKeyContainerInfo_Type = typeof(CspKeyContainerInfo);
 
@@ -125,11 +123,15 @@ namespace FirmaXadesNet.Crypto
 
                     _disposeCryptoProvider = true;
                 }
-                else
+                else 
                 {
                     _signingKey = key;
                     _disposeCryptoProvider = false;
                 }
+            }
+            else 
+            {
+                throw new NotSupportedException(k.ToString());
             }
         }
 
